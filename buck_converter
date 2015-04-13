@@ -1,0 +1,102 @@
+#!/usr/bin/bc -ql
+#
+# Calculate an MC34063A buck converter circuit parameters
+#
+
+#
+# Inputs
+#
+
+# Darlington-configuration switch saturation voltage (from the spec), V
+v_sat = 1
+
+# Forward voltage drop of the output rectifier (1N5819), V
+v_f = 0.6
+
+# Minimum input voltage, V
+v_in_min = 12
+
+# Nominal input voltage, V
+v_in_nom = 18
+
+# Maximum input voltage, V
+v_in_max = 19
+
+# Desired output voltage, V
+v_out = 9.75
+
+# Desired (maximum) output current, A
+i_out = 0.15
+
+# Minimum desired output switching frequency, at the selected values of
+# v_in_nom and i_out, Hz (100000 max)
+f = 61132
+
+# Desired peak-to-peak output ripple voltage. The ripple voltage directly
+# affects the line and load regulation and, thus, must be considered. In
+# practice, the actual capacitor value should be larger than the calculated
+# value, to account for the capacitor's equivalent series resistance and
+# board layout. V (peak-to-peak)
+v_ripple = 0.12
+
+print "Inputs:\n"
+print "Vin(min):    ", v_in_min, " V\n"
+print "Vin(nom):    ", v_in_nom, " V\n"
+print "Vin(max):    ", v_in_max, " V\n"
+print "Vout:        ", v_out, " V\n"
+print "Iout:        ", i_out*1000, " mA\n"
+print "f:           ", f/1000, " KHz\n"
+print "Vsat:        ", v_sat, " V\n"
+print "Vripple:     ", v_ripple*1000, " mVpp\n"
+
+#
+# Calculation
+#
+
+# t(on) / t(off), ratio of switch-on to switch-off time, i.e. duty ratio
+t_on_to_t_off = (v_out + v_f) / (v_in_min - v_sat - v_out)
+
+# t(on) + t(off), i.e. switching period
+t_on_plus_t_off = 1 / f
+
+# Switch-off time
+t_off = (t_on_plus_t_off) / (t_on_to_t_off + 1)
+
+# Switch-on time
+t_on = t_on_plus_t_off - t_off
+
+# Timing capacitor value, F
+c_t = 4 * 10^-5 * t_on
+
+# Peak current through the switch.
+i_pk = 2 * i_out
+
+# Current sense resistor value, Ohm
+r_sc = 0.3 / i_pk
+
+# Minimum output inductor value, H
+l = ((v_in_min - v_sat - v_out) / i_pk) * t_on
+
+# Output capacitor value, F
+c_o = (i_pk * t_on_plus_t_off) / (8 * v_ripple)
+
+# Comparator voltage divider resistor ratio
+r2_to_r1 = v_out / 1.25 - 1
+
+#
+# Output
+#
+print "\n"
+print "Outputs:\n"
+print "t_on:        ", t_on/10^-6, " us\n"
+print "t_off:       ", t_off/10^-6, " us\n"
+print "t_on/t_off:  ", t_on_to_t_off, "\n"
+print "t_on+t_off:  ", t_on_plus_t_off/10^-6, " us\n"
+print "Rsc:         ", r_sc, " Ohm\n"
+print "Ct:          ", c_t/10^-12, " pF\n"
+print "Co:          ", c_o/10^-6, " uF\n"
+print "L(min):      ", l/10^-6, " uH\n"
+print "R2/R1:       ", r2_to_r1, "\n"
+
+# Stop
+halt

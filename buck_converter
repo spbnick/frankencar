@@ -23,14 +23,14 @@ v_in_nom = 18
 v_in_max = 19
 
 # Desired output voltage, V
-v_out = 9.75
+v_out = 5
 
 # Desired (maximum) output current, A
-i_out = 0.15
+i_out = 0.5
 
 # Minimum desired output switching frequency, at the selected values of
 # v_in_nom and i_out, Hz (100000 max)
-f = 61132
+f = 50000
 
 # Desired peak-to-peak output ripple voltage. The ripple voltage directly
 # affects the line and load regulation and, thus, must be considered. In

@@ -3,3 +3,6 @@ cscope.out
 *.elf
 *.hex
 *.swp
+*.bak
+*.bck
+*-cache.lib

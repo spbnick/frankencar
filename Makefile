@@ -1,18 +1,42 @@
-CC_PFX=avr-
-CC=$(CC_PFX)gcc
-OBJCOPY=$(CC_PFX)objcopy
-CFLAGS=-mmcu=atmega32u4 -DF_CPU=16000000L -Os -Wall -Wextra -Werror
+CCPFX=arm-none-eabi-
 
-all: frankencar.hex
+TARGET_CFLAGS = -mcpu=cortex-m3 -mthumb
+COMMON_CFLAGS = $(TARGET_CFLAGS) -Wall -Wextra -Werror
+LIBS = -lstammer
 
-frankencar.hex: frankencar.elf
-	$(OBJCOPY) -O ihex -R .eeprom $< $@
+LDSCRIPTS = \
+    memory.ld   \
+    flash.ld
 
-frankencar.elf: frankencar.o steer.o misc.o
-	$(CC) $(CFLAGS) $^ -o $@
+# In order of symbol resolution
+MODS = \
+    vectors     \
+    frankencar  \
+    drive
 
-upload: frankencar.hex
-	avrdude -c avr109 -p m32u4 -P /dev/ttyACM0 -b 57600 -U flash:w:$<:i
+OBJS = $(addsuffix .o, $(MODS))
+DEPS = $(OBJS:.o=.d)
+
+.PHONY: clean
+
+all: frankencar.bin
+
+%.o: %.c
+	$(CCPFX)gcc $(COMMON_CFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CCPFX)gcc $(COMMON_CFLAGS) $(CFLAGS) -MM $< > $*.d
+
+%.o: %.S
+	$(CCPFX)gcc $(COMMON_CFLAGS) $(CFLAGS) -D__ASSEMBLY__ -c -o $@ $<
+	$(CCPFX)gcc $(COMMON_CFLAGS) $(CFLAGS) -D__ASSEMBLY__ -MM $< > $*.d
+
+%.bin: %.elf
+	$(CCPFX)objcopy -O binary $< $@
+
+frankencar.elf: $(OBJS) $(LDSCRIPTS)
+	$(CCPFX)ld -T flash.ld $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
-	rm -f *.o *.elf *.hex
+	rm -f $(OBJS)
+	rm -f $(DEPS)
+	rm -f frankencar.elf
+	rm -f frankencar.bin

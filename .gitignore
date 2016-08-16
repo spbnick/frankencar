@@ -1,7 +1,8 @@
 cscope.out
 *.o
+*.d
 *.elf
-*.hex
+*.bin
 *.swp
 *.bak
 *.bck

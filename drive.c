@@ -8,9 +8,13 @@
 #include "init.h"
 #include "tim.h"
 
+/** APB2 clock frequency, Hz */
 #define DRIVE_APB2_FREQ_HZ      72000000
+/** Drive PWM frequency, Hz */
 #define DRIVE_SWITCH_FREQ_HZ    24000
+/** Number of ticks in a drive PWM period */
 #define DRIVE_SWITCH_TICKS      100
+/** Drive PWM timer prescaler value */
 #define DRIVE_TIM_PSC \
             (DRIVE_APB2_FREQ_HZ / DRIVE_SWITCH_FREQ_HZ / DRIVE_SWITCH_TICKS)
 

@@ -8,6 +8,12 @@
 #include "init.h"
 #include "tim.h"
 
+#define DRIVE_APB2_FREQ_HZ      72000000
+#define DRIVE_SWITCH_FREQ_HZ    24000
+#define DRIVE_SWITCH_TICKS      100
+#define DRIVE_TIM_PSC \
+            (DRIVE_APB2_FREQ_HZ / DRIVE_SWITCH_FREQ_HZ / DRIVE_SWITCH_TICKS)
+
 bool
 drive_init(void)
 {
@@ -39,22 +45,34 @@ drive_init(void)
                  TIM_CCMR1_OC1PE_MASK;
     /* Enable auto-reload preload, leave the default of upcounting */
     tim->cr1 |= TIM_CR1_ARPE_MASK;
-    /* Enable first channel (OC1), leave the default of active high */
-    tim->ccer |= TIM_CCER_CC1E_MASK;
+    /* Enable first channel (OC1), set active low */
+    tim->ccer |= TIM_CCER_CC1E_MASK | TIM_CCER_CC1P_MASK;
     /* Enable main output */
     tim->bdtr |= TIM_BDTR_MOE_MASK;
-    /* Set prescaler to get CK_CNT = 2KHz = 72MHz(APB2) / 36000 */
-    tim->psc = 36000;
-    /* Set auto-reload register to have period of 1 second */
-    tim->arr = 2000;
-    /* Set capture/compare register to have 25% duty */
-    tim->ccr1 = 1000;
+    /* Set prescaler to get switching frequency */
+    tim->psc = DRIVE_TIM_PSC;
+    /* Set auto-reload register to switching frequency */
+    tim->arr = DRIVE_SWITCH_TICKS;
+    /* Set capture/compare register to have 0% duty */
+    tim->ccr1 = 0;
     /* Generate an update event to transfer data to shadow registers */
     tim->egr |= TIM_EGR_UG_MASK;
     /* Enable counter */
     tim->cr1 |= TIM_CR1_CEN_MASK;
 
     return true;
+}
+
+
+void
+drive_set_power(unsigned int percents)
+{
+    volatile struct tim *tim = TIM1;
+
+    /* Set capture/compare register to have 0% duty */
+    tim->ccr1 = percents;
+    /* Generate an update event to transfer data to shadow registers */
+    tim->egr |= TIM_EGR_UG_MASK;
 }
 
 

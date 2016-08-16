@@ -13,6 +13,8 @@ reset(void)
     init();
     /* Drive init */
     drive_init();
+    /* Start drive */
+    drive_set_power(50);
 
     STOP;
 }

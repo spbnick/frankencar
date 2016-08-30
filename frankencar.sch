@@ -549,17 +549,6 @@ L
 Text Notes 8410 1950 0    60   ~ 0
 S
 $Comp
-L R R?
-U 1 1 555F9592
-P 3850 4100
-F 0 "R?" H 3950 4100 40  0000 C CNN
-F 1 "10K" V 3857 4101 40  0000 C CNN
-F 2 "~" V 3780 4100 30  0000 C CNN
-F 3 "~" H 3850 4100 30  0000 C CNN
-	1    3850 4100
-	1    0    0    -1  
-$EndComp
-$Comp
 L GND #PWR?
 U 1 1 555F96B7
 P 4450 4850
@@ -578,17 +567,6 @@ Text Notes 4600 4750 0    60   ~ 0
 L
 Text Notes 4600 4050 0    60   ~ 0
 L
-$Comp
-L R R?
-U 1 1 555F97D2
-P 4100 4100
-F 0 "R?" H 4200 4100 40  0000 C CNN
-F 1 "10K" V 4107 4101 40  0000 C CNN
-F 2 "~" V 4030 4100 30  0000 C CNN
-F 3 "~" H 4100 4100 30  0000 C CNN
-	1    4100 4100
-	1    0    0    -1  
-$EndComp
 $Comp
 L +3.3V #PWR?
 U 1 1 555F9BF4
@@ -924,12 +902,6 @@ Wire Wire Line
 Wire Wire Line
 	4100 4550 4650 4550
 Wire Wire Line
-	3850 4250 3850 4400
-Connection ~ 3850 4400
-Wire Wire Line
-	4100 4250 4100 4550
-Connection ~ 4100 4550
-Wire Wire Line
 	3550 4250 3350 4250
 Wire Wire Line
 	1750 4250 1350 4250
@@ -941,21 +913,11 @@ Wire Wire Line
 	5300 4300 5300 3600
 Connection ~ 4550 4300
 Wire Wire Line
-	4100 3800 4100 3950
-Wire Wire Line
-	3550 3800 3850 3800
-Wire Wire Line
-	3850 3800 4100 3800
-Wire Wire Line
-	3850 3950 3850 3800
-Connection ~ 3850 3800
-Wire Wire Line
 	1350 5750 1750 5750
 Wire Wire Line
 	3550 3750 3550 3800
 Wire Wire Line
 	3550 3800 3550 4250
-Connection ~ 3550 3800
 Text Notes 9700 4350 0    60   ~ 0
 red
 Text Notes 9700 4450 0    60   ~ 0

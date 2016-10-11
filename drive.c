@@ -72,7 +72,7 @@ drive_init(void)
 void
 drive_set_power(unsigned int percents)
 {
-    /* Set capture/compare register to have 0% duty */
+    /* Set capture/compare register to have the specified duty */
     drive_tim->ccr1 = percents;
     /* Generate an update event to transfer data to shadow registers */
     drive_tim->egr |= TIM_EGR_UG_MASK;

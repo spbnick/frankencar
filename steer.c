@@ -2,159 +2,163 @@
  * Steering stepper management
  */
 
-#include <stdbool.h>
-#include <util/delay.h>
-#include <avr/io.h>
-#include "assert.h"
 #include "steer.h"
+#include <rcc.h>
+#include <gpio.h>
+#include <tim.h>
+#include <nvic.h>
 
-#define STEER_STEP_PORT_NUM     4
+/** The timer used to control the steering stepper */
+volatile struct tim * const steer_tim = TIM2;
 
-#define STEER_STEP_DDR          DDRF
-#define STEER_STEP_DDR_MASK     (_BV(DDF6) | _BV(DDF5) | \
-                                 _BV(DDF4) | _BV(DDF1))
+/** Timer clock frequency, Hz */
+#define STEER_TIM_CLK_FREQ_HZ   36000000
 
-#define STEER_STEP_PORT         PORTF
-#define STEER_STEP_PORT_MASK    (_BV(PORTF6) | _BV(PORTF5) | \
-                                 _BV(PORTF4) | _BV(PORTF1))
+/** Timer tick, Hz (1 ms) */
+#define STEER_TIM_TICK_HZ       1000
 
-/** Pin numbers in the left-to-right moving order */
-const uint8_t steer_step_port_list[STEER_STEP_PORT_NUM] = {
-    _BV(PORTF1),
-    _BV(PORTF4),
-    _BV(PORTF5),
-    _BV(PORTF6),
+/** Minimum position pulse length, ms */
+#define STEER_PULSE_LEN_MS      2
+
+/** Steering control state */
+enum steer_state {
+    /** Move left until left limit hit */
+    STEER_STATE_SWEEP_RIGHT,
+    /** Move right until right limit hit */
+    STEER_STATE_SWEEP_LEFT,
+    /** Count steps from the left to the right limit */
+    STEER_STATE_COUNT_RIGHT,
+    /** Ready for steering */
+    STEER_STATE_READY
 };
 
-#define STEER_STEP_ON_DELAY    2
-#define STEER_STEP_OFF_DELAY   1
+/** Steering control state */
+static enum steer_state steer_state;
 
-#define STEER_LIMIT_DDR         DDRD
-#define STEER_LIMIT_DDR_MASK    (_BV(DDD4) | _BV(DDD6))
-#define STEER_LIMIT_PIN         PIND
-#define STEER_LIMIT_PINL        _BV(PIND4)
-#define STEER_LIMIT_PINR        _BV(PIND6)
-#define STEER_LIMIT_PIN_MASK    (STEER_LIMIT_PINL | STEER_LIMIT_PINR)
+/** Leftmost steering wheels position */
+static int steer_pos_left;
 
-static int8_t steer_step = -1;
-static uint16_t steer_width = 0;
-static uint16_t steer_pos = 0;
+/** Rightmost steering wheels position */
+static int steer_pos_right;
 
-static bool
-steer_limit_left(void)
+/** Target steering wheels position */
+static int steer_pos_target;
+
+/** Current steering wheels position */
+static int steer_pos_current;
+
+/** Timer interrupt handler */
+void steer_tim_handler(void) __attribute__ ((isr));
+void
+steer_tim_handler(void)
 {
-    return STEER_LIMIT_PIN & STEER_LIMIT_PINL;
-}
-
-static bool
-steer_limit_right(void)
-{
-    return STEER_LIMIT_PIN & STEER_LIMIT_PINR;
-}
-
-static bool
-steer_limit_both(void)
-{
-    return (STEER_LIMIT_PIN & STEER_LIMIT_PIN_MASK) == STEER_LIMIT_PIN_MASK;
-}
-
-static void
-steer_step_by(int8_t off)
-{
-    assert(off == 1 || off == -1);
-    steer_step = (steer_step + off) & (STEER_STEP_PORT_NUM - 1);
-    STEER_STEP_PORT = (STEER_STEP_PORT & ~STEER_STEP_PORT_MASK) |
-                        steer_step_port_list[steer_step];
-    _delay_ms(STEER_STEP_ON_DELAY);
-    STEER_STEP_PORT &= ~STEER_STEP_PORT_MASK;
-};
-
-static void
-steer_step_left(void)
-{
-    steer_step_by(-1);
-}
-
-static void
-steer_step_right(void)
-{
-    steer_step_by(1);
+    switch (steer_state) {
+    case STEER_STATE_SWEEP_RIGHT:
+        /* If right limit is hit */
+        if (GPIO_B->idr & GPIO_IDR_IDR1_MASK) {
+            /* Start sweeping left */
+            steer_state = STEER_STATE_SWEEP_LEFT;
+        } else {
+            steer_pos_current++;
+        }
+        break;
+    case STEER_STATE_SWEEP_LEFT:
+        /* If right limit is hit */
+        if (GPIO_B->idr & GPIO_IDR_IDR0_MASK) {
+            /* Start counting right*/
+            steer_pos_left = steer_pos_current;
+            steer_state = STEER_STATE_COUNT_RIGHT;
+        } else {
+            steer_pos_current--;
+        }
+        break;
+    case STEER_STATE_COUNT_RIGHT:
+        /* If right limit is hit */
+        if (GPIO_B->idr & GPIO_IDR_IDR1_MASK) {
+            /* Ready! */
+            steer_pos_right = steer_pos_current;
+            steer_state = STEER_STATE_READY;
+            /* Center the wheels */
+            steer_pos_target = (steer_pos_left + steer_pos_right) / 2;
+        } else {
+            steer_pos_current++;
+        }
+        break;
+    case STEER_STATE_READY:
+        if (steer_pos_current < steer_pos_target) {
+            steer_pos_current++;
+        } else if (steer_pos_current > steer_pos_target) {
+            steer_pos_current--;
+        }
+        break;
+    default:
+        break;
+    }
+    unsigned int r = GPIO_B->odr;
+    r &= ~(GPIO_ODR_ODR8_MASK | GPIO_ODR_ODR9_MASK |
+           GPIO_ODR_ODR10_MASK | GPIO_ODR_ODR11_MASK);
+    r |= GPIO_ODR_ODR8_MASK << (steer_pos_current & 3);
+    GPIO_B->odr = r;
+    /* Acknowledge the interrupt */
+    steer_tim->sr ^= TIM_SR_UIF_MASK;
 }
 
 bool
 steer_init(void)
 {
-    /* Set stepper pins for output */
-    STEER_STEP_DDR |= STEER_STEP_DDR_MASK;
-    /* Set limit switch pins for input */
-    STEER_LIMIT_DDR &= ~STEER_LIMIT_DDR_MASK;
+    /* Enable APB2 clock to I/O port B */
+    RCC->apb2enr |= RCC_APB2ENR_IOPBEN_MASK;
 
-    /* If both limits are triggered */
-    if (steer_limit_both())
-        return false;
-
-    /* Rotate right until a limit is hit */
-    while (!steer_limit_right())
-        steer_step_right();
-
-    /* Rotate left until a limit is hit */
-    while (!steer_limit_left())
-        steer_step_left();
+    /* Setup PB0 and PB1 as pull-up/down inputs for limit switches */
+    gpio_pin_conf(GPIO_B, 0, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL);
+    gpio_pin_conf(GPIO_B, 1, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL);
+    /* Setup PB0 and PB1 as pull-up inputs */
+    GPIO_B->bsrr = GPIO_BSRR_BS0_MASK | GPIO_BSRR_BS1_MASK;
 
     /*
-     * Now that we're sure we're at the edge of a limit,
-     * count number of steps between them
+     * Setup PB8/9/10/11 as general purpose push-pull output
+     * for stepper motor control
      */
-    steer_width = 0;
-    while (!steer_limit_right()) {
-        steer_step_right();
-        steer_width++;
-    }
+    gpio_pin_conf(GPIO_B, 8,
+                  GPIO_MODE_OUTPUT_2MHZ, GPIO_CNF_OUTPUT_GP_PUSH_PULL);
+    gpio_pin_conf(GPIO_B, 9,
+                  GPIO_MODE_OUTPUT_2MHZ, GPIO_CNF_OUTPUT_GP_PUSH_PULL);
+    gpio_pin_conf(GPIO_B, 10,
+                  GPIO_MODE_OUTPUT_2MHZ, GPIO_CNF_OUTPUT_GP_PUSH_PULL);
+    gpio_pin_conf(GPIO_B, 11,
+                  GPIO_MODE_OUTPUT_2MHZ, GPIO_CNF_OUTPUT_GP_PUSH_PULL);
+    /*
+     * Turn off all outputs
+     */
+    GPIO_B->bsrr = GPIO_BSRR_BR8_MASK | GPIO_BSRR_BR9_MASK | 
+                   GPIO_BSRR_BR10_MASK | GPIO_BSRR_BR11_MASK;
 
-    assert(steer_width > 1);
+    /*
+     * Initialize state
+     */
+    steer_state = STEER_STATE_SWEEP_RIGHT;
+    steer_pos_target = 0;
+    steer_pos_current = 0;
 
-    /* Move to the center */
-    for (steer_pos = steer_width - 1;
-         steer_pos >= (steer_width >> 1); steer_pos--) {
-        steer_step_left();
-    }
+    /*
+     * Setup stepper motor timer
+     */
+    /* Enable timer interrupt */
+    NVIC->iser[NVIC_INT_TIM2 / 32] |= 1 << (NVIC_INT_TIM2 % 32);
+    /* Enable APB1 clock to TIM2 */
+    RCC->apb1enr |= RCC_APB1ENR_TIM2EN_MASK;
+    /* Set prescaler to get switching frequency */
+    steer_tim->psc = STEER_TIM_CLK_FREQ_HZ / STEER_TIM_TICK_HZ - 1;
+    /* Enable auto-reload preload, leave the default of upcounting */
+    steer_tim->cr1 |= TIM_CR1_ARPE_MASK;
+    /* Set auto-reload register to position pulse length */
+    steer_tim->arr = STEER_PULSE_LEN_MS;
+    /* Enable update event interrupt */
+    steer_tim->dier |= TIM_DIER_UIE_MASK;
+    /* Generate an update event to transfer data to shadow registers */
+    steer_tim->egr |= TIM_EGR_UG_MASK;
+    /* Enable counter */
+    steer_tim->cr1 |= TIM_CR1_CEN_MASK;
 
-    /* Reduce width by 6.25% to keep clear of the limits */
-    steer_width -= steer_width >> 4;
-    steer_pos = steer_width >> 1;
-
-    assert(steer_width > 2);
-
-    /* Now we're centered */
     return true;
-}
-
-void
-steer_sweep(void)
-{
-    int8_t i = 0;
-    int8_t step = 1;
-    bool limit_left;
-    bool limit_right;
-
-    while(1) {
-        limit_left = STEER_LIMIT_PIN & STEER_LIMIT_PINL;
-        limit_right = STEER_LIMIT_PIN & STEER_LIMIT_PINR;
-
-        if (limit_left && limit_right)
-            step = 0;
-        else if (limit_left)
-            step = 1;
-        else if (limit_right)
-            step = -1;
-
-        if (step) {
-            i = (i + step) & (STEER_STEP_PORT_NUM - 1);
-            STEER_STEP_PORT = (STEER_STEP_PORT & ~STEER_STEP_PORT_MASK) |
-                              steer_step_port_list[i];
-            _delay_ms(STEER_STEP_ON_DELAY);
-        }
-        STEER_STEP_PORT &= ~STEER_STEP_PORT_MASK;
-        _delay_ms(STEER_STEP_OFF_DELAY);
-    }
 }

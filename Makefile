@@ -12,7 +12,8 @@ LDSCRIPTS = \
 MODS = \
     vectors     \
     frankencar  \
-    drive
+    drive       \
+    steer
 
 OBJS = $(addsuffix .o, $(MODS))
 DEPS = $(OBJS:.o=.d)

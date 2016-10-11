@@ -1,5 +1,6 @@
 #include <init.h>
 #include "drive.h"
+#include "steer.h"
 
 #define STOP \
     do {                \
@@ -13,8 +14,8 @@ reset(void)
     init();
     /* Drive init */
     drive_init();
-    /* Start drive */
-    drive_set_power(50);
+    /* Steering init */
+    steer_init();
 
     STOP;
 }

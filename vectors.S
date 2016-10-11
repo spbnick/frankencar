@@ -48,7 +48,7 @@
 .word default_handler   /* TIM1_UP */
 .word default_handler   /* TIM1_TRG_COM */
 .word default_handler   /* TIM1_CC */
-.word default_handler   /* TIM2 */
+.word steer_tim_handler /* TIM2 */
 .word default_handler   /* TIM3 */
 .word default_handler   /* TIM4 */
 .word default_handler   /* I2C1_EV */

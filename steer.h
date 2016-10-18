@@ -6,9 +6,6 @@
 
 #include <stdbool.h>
 
-#define STEER_POS_MIN   -128
-#define STERR_POS_MAX   127
-
 /**
  * Initialize steering HW.
  *
@@ -17,24 +14,38 @@
 extern bool steer_init(void);
 
 /**
+ * Get leftmost steering wheel position value.
+ *
+ * @return Leftmost steering position.
+ */
+extern int steer_pos_get_left(void);
+
+/**
+ * Get rightmost steering wheel position value.
+ *
+ * @return Rightmost steering position.
+ */
+extern int steer_pos_get_right(void);
+
+/**
  * Set target position of the steering wheels.
  *
  * @param pos   Position to set.
  */
-extern void steer_set_pos_target(int pos_target);
+extern void steer_pos_set_target(int pos_target);
 
 /**
  * Get target position of the steering wheels.
  *
  * @return Target position of the steering wheels.
  */
-extern int steer_get_pos_target(void);
+extern int steer_pos_get_target(void);
 
 /**
  * Get current position of the steering wheels.
  *
  * @return Current position of the steering wheels.
  */
-extern int steer_get_pos_current(void);
+extern int steer_pos_get_current(void);
 
 #endif /* _STEER_H */

@@ -47,6 +47,36 @@ static int steer_pos_target;
 /** Current steering wheels position */
 static int steer_pos_current;
 
+int
+steer_pos_get_left(void)
+{
+    return steer_pos_left;
+}
+
+int
+steer_pos_get_right(void)
+{
+    return steer_pos_right;
+}
+
+void
+steer_pos_set_target(int pos_target)
+{
+    steer_pos_target = pos_target;
+}
+
+int
+steer_pos_get_target(void)
+{
+    return steer_pos_target;
+}
+
+int
+steer_pos_get_current(void)
+{
+    return steer_pos_current;
+}
+
 /** Timer interrupt handler */
 void steer_tim_handler(void) __attribute__ ((isr));
 void
@@ -159,6 +189,13 @@ steer_init(void)
     steer_tim->egr |= TIM_EGR_UG_MASK;
     /* Enable counter */
     steer_tim->cr1 |= TIM_CR1_CEN_MASK;
+
+    /*
+     * Wait for the steering to be ready
+     */
+    while (steer_state != STEER_STATE_READY) {
+        asm ("wfi");
+    }
 
     return true;
 }

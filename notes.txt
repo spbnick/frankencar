@@ -1,0 +1,25 @@
+=====================================================================
+
+BELOW IS A RUNNING STREAM OF NOTES WHICH DON'T HAVE TO MAKE ANY SENSE
+
+=====================================================================
+
+So we have a steering timer and on each timer interrupt we turn off one coil
+and turn on another, is asked to reposition.
+
+How fast the timer should be is determined by the properties of the stepper
+motor.
+
+If the last pulse is not complete, change only when done.
+Perhaps disable the timer once reaching the target position?
+
+Still, when a different position is specified, the pulse should be started
+immediately. I.e. before the first tick.
+
+It would be convenient to do all motor manipulation within the timer
+interrupt handler.
+
+Let's start with just always running the timer and checking if the target
+position is different from the current position in the handler.
+
+There's still the problem of the initial steering calibration.

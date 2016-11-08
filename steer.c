@@ -35,10 +35,10 @@ enum steer_state {
 /** Steering control state */
 static enum steer_state steer_state;
 
-/** Leftmost steering wheels position */
+/** Leftmost steering wheels position, less than rightmost */
 static int steer_pos_left;
 
-/** Rightmost steering wheels position */
+/** Rightmost steering wheels position, greater than leftmost */
 static int steer_pos_right;
 
 /** Target steering wheels position */

@@ -48,4 +48,11 @@ extern int steer_pos_get_target(void);
  */
 extern int steer_pos_get_current(void);
 
+/**
+ * Check if current steering wheel position is at the target.
+ *
+ * @return True if the wheels are at the target position, false otherwise.
+ */
+extern bool steer_pos_is_target(void);
+
 #endif /* _STEER_H */

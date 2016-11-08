@@ -77,6 +77,12 @@ steer_pos_get_current(void)
     return steer_pos_current;
 }
 
+bool
+steer_pos_is_target(void)
+{
+    return steer_pos_current == steer_pos_target;
+}
+
 /**
  * Check if left limit switch is hit.
  *

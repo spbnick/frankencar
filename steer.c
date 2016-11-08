@@ -77,6 +77,28 @@ steer_pos_get_current(void)
     return steer_pos_current;
 }
 
+/**
+ * Check if left limit switch is hit.
+ *
+ * @return True if left limit switch is hit, false otherwise.
+ */
+static bool
+steer_is_left(void)
+{
+    return GPIO_B->idr & GPIO_IDR_IDR0_MASK;
+}
+
+/**
+ * Check if right limit switch is hit.
+ *
+ * @return True if right limit switch is hit, false otherwise.
+ */
+static bool
+steer_is_right(void)
+{
+    return GPIO_B->idr & GPIO_IDR_IDR1_MASK;
+}
+
 /** Timer interrupt handler */
 void steer_tim_handler(void) __attribute__ ((isr));
 void
@@ -84,8 +106,7 @@ steer_tim_handler(void)
 {
     switch (steer_state) {
     case STEER_STATE_SWEEP_RIGHT:
-        /* If right limit is hit */
-        if (GPIO_B->idr & GPIO_IDR_IDR1_MASK) {
+        if (steer_is_right()) {
             /* Start sweeping left */
             steer_state = STEER_STATE_SWEEP_LEFT;
         } else {
@@ -93,8 +114,7 @@ steer_tim_handler(void)
         }
         break;
     case STEER_STATE_SWEEP_LEFT:
-        /* If right limit is hit */
-        if (GPIO_B->idr & GPIO_IDR_IDR0_MASK) {
+        if (steer_is_left()) {
             /* Start counting right*/
             steer_pos_left = steer_pos_current;
             steer_state = STEER_STATE_COUNT_RIGHT;
@@ -103,8 +123,7 @@ steer_tim_handler(void)
         }
         break;
     case STEER_STATE_COUNT_RIGHT:
-        /* If right limit is hit */
-        if (GPIO_B->idr & GPIO_IDR_IDR1_MASK) {
+        if (steer_is_right()) {
             /* Ready! */
             steer_pos_right = steer_pos_current;
             steer_state = STEER_STATE_READY;

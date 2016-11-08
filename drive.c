@@ -68,7 +68,6 @@ drive_init(void)
     return true;
 }
 
-
 void
 drive_set_power(unsigned int percents)
 {
@@ -77,5 +76,3 @@ drive_set_power(unsigned int percents)
     /* Generate an update event to transfer data to shadow registers */
     drive_tim->egr |= TIM_EGR_UG_MASK;
 }
-
-

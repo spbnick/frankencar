@@ -111,17 +111,19 @@ steer_tim_handler(void)
             steer_state = STEER_STATE_SWEEP_LEFT;
         } else {
             steer_pos_current++;
+            break;
         }
-        break;
+        /* Fall through */
     case STEER_STATE_SWEEP_LEFT:
         if (steer_is_left()) {
-            /* Start counting right*/
+            /* Start counting right */
             steer_pos_left = steer_pos_current;
             steer_state = STEER_STATE_COUNT_RIGHT;
         } else {
             steer_pos_current--;
+            break;
         }
-        break;
+        /* Fall through */
     case STEER_STATE_COUNT_RIGHT:
         if (steer_is_right()) {
             /* Ready! */
@@ -131,8 +133,9 @@ steer_tim_handler(void)
             steer_pos_target = (steer_pos_left + steer_pos_right) / 2;
         } else {
             steer_pos_current++;
+            break;
         }
-        break;
+        /* Fall through */
     case STEER_STATE_READY:
         /* Recalibrate, if lost count */
         if (steer_is_left()) {

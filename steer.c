@@ -134,10 +134,23 @@ steer_tim_handler(void)
         }
         break;
     case STEER_STATE_READY:
+        /* Recalibrate, if lost count */
+        if (steer_is_left()) {
+            steer_pos_right += steer_pos_current - steer_pos_left;
+            steer_pos_left = steer_pos_current;
+        } else if (steer_is_right()) {
+            steer_pos_left += steer_pos_current - steer_pos_right;
+            steer_pos_right = steer_pos_current;
+        }
+        /* Turn, if off target */
         if (steer_pos_current < steer_pos_target) {
-            steer_pos_current++;
+            if (steer_pos_current < steer_pos_right) {
+                steer_pos_current++;
+            }
         } else if (steer_pos_current > steer_pos_target) {
-            steer_pos_current--;
+            if (steer_pos_current > steer_pos_left) {
+                steer_pos_current--;
+            }
         }
         break;
     default:

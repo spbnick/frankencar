@@ -18,7 +18,7 @@ volatile struct tim * const steer_tim = TIM2;
 #define STEER_TIM_TICK_HZ       1000
 
 /** Minimum position pulse length, ms */
-#define STEER_PULSE_LEN_MS      2
+#define STEER_PULSE_LEN_MS      4
 
 /** Steering control state */
 enum steer_state {

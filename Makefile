@@ -17,6 +17,7 @@ MODS = \
 
 OBJS = $(addsuffix .o, $(MODS))
 DEPS = $(OBJS:.o=.d)
+-include $(DEPS)
 
 .PHONY: clean
 

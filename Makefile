@@ -35,7 +35,8 @@ all: frankencar.bin
 	$(CCPFX)objcopy -O binary $< $@
 
 frankencar.elf: $(OBJS) $(LDSCRIPTS)
-	$(CCPFX)ld -T flash.ld $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(CCPFX)gcc -nostartfiles $(COMMON_CFLAGS) $(CFLAGS) \
+		-T flash.ld $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
 	rm -f $(OBJS)

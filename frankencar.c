@@ -58,8 +58,8 @@ systick_handler(void)
     }
 }
 
-void
-reset(void)
+int
+main(void)
 {
     /* System init */
     init();

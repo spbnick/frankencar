@@ -4,13 +4,8 @@ TARGET_CFLAGS = -mcpu=cortex-m3 -mthumb
 COMMON_CFLAGS = $(TARGET_CFLAGS) -Wall -Wextra -Werror -g3
 LIBS = -lstammer
 
-LDSCRIPTS = \
-    memory.ld   \
-    flash.ld
-
 # In order of symbol resolution
 MODS = \
-    vectors     \
     frankencar  \
     drive       \
     steer
@@ -34,9 +29,9 @@ all: frankencar.bin
 %.bin: %.elf
 	$(CCPFX)objcopy -O binary $< $@
 
-frankencar.elf: $(OBJS) $(LDSCRIPTS)
+frankencar.elf: $(OBJS)
 	$(CCPFX)gcc -nostartfiles $(COMMON_CFLAGS) $(CFLAGS) \
-		-T flash.ld $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+		-T libstammer.ld $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
 	rm -f $(OBJS)
